@@ -1,0 +1,30 @@
+sudo: required
+services:
+    - docker
+
+# Antes de rodar os tests criamos uma imagem do client (react) usando o Dockerfile.dev que contém tudo para rodar testes
+before_install:
+    - docker build -t guilhermegpg/react-test -f ./client/Dockerfile.dev ./client
+    #ex: - docker build aplicacaoNode.js que quero testar
+    #ex: - docker build outroprojeto que quero testar
+
+#Tudo que rodar dentro nessa parte e o tracis retornar diferente de 0 quer dizer que quebrou
+script:
+    - docker run guilhermegpg/react-test npm run test -- --coverage 
+    #-- --coverage para forçar sair após o teste rodar
+    #ex: - docker run aplicacaoNode.js
+    #ex: rodar testes integrados e unitários
+
+after_success:
+    - docker build -t guilhermegpg/multi-client ./client
+    - docker build -t guilhermegpg/multi-nginx ./nginx
+    - docker build -t guilhermegpg/multi-server ./server
+    - docker build -t guilhermegpg/multi-worker ./worker
+
+    #Logando no Docker CLI
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+    #Subindo as imagens para o Docker Hub
+    - docker push guilhermegpg/multi-client
+    - docker push guilhermegpg/multi-nginx
+    - docker push guilhermegpg/multi-server
+    - docker push guilhermegpg/multi-worker
